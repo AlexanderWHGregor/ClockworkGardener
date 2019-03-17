@@ -188,7 +188,7 @@ Transform:
   m_PrefabInternal: {fileID: 0}
   m_GameObject: {fileID: 473679108}
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 3.5, y: 2.8, z: -10}
+  m_LocalPosition: {x: 3.5, y: 2.8, z: -20}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_Children: []
   m_Father: {fileID: 0}
@@ -223,16 +223,12 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   width: 8
   height: 6
-  tilePrefab: {fileID: 3828452505794946323, guid: 98d189514bff840f89f2d7cbdeb965a0,
-    type: 2}
-  characters:
-  - {fileID: 1948113628688094, guid: 47f71e848d8b94698bbefc275658e05f, type: 2}
-  - {fileID: 1297848305045678, guid: 0574ccd8dc3db4457856176d1a0f6f28, type: 2}
-  - {fileID: 1556987609976998, guid: 98888fa1a4ed54f129ffdd39a969a050, type: 2}
-  - {fileID: 1588513153659282, guid: ab54e37e39d804a07b72f5f7630e876c, type: 2}
-  - {fileID: 1508544023348812, guid: 00e11618d88bb4b4382075bbd61fd7cf, type: 2}
-  - {fileID: 1480818407248264, guid: c5855cb755f844edea12b12d6b90fdac, type: 2}
-  - {fileID: 1731490211396662, guid: 6e8905005ca5b418192a22c80dfb83dd, type: 2}
+  gemResources:
+  - {fileID: 1348003151446230, guid: b9df33c10bd377f45ab6064177e8a21e, type: 2}
+  - {fileID: 1977912247592658, guid: 8c503436ed203964fa3ecb8e791da2d5, type: 2}
+  - {fileID: 1224608983503188, guid: ee5fcbebde7204b42840d38802db18ee, type: 2}
+  - {fileID: 1761522999652098, guid: 48f911b98f2dfed458ab5395bd38e72f, type: 2}
+  - {fileID: 1535147373951902, guid: 06224ed413ac1084ba30aeaf0351c8df, type: 2}
 --- !u!4 &1889266086
 Transform:
   m_ObjectHideFlags: 0

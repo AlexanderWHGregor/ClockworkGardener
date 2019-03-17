@@ -7,31 +7,25 @@ public class BoardManager : MonoBehaviour
     // Script for the Board Manager to initiate the game board
     struct Gem
     {
-        public int resourceIndex;               
+        public int resourceIndex;           // Determines what the gem looks like               
         public GameObject gemObject;
-        public GemController gc;        // Reference to gem handler
-        public int dropDistance;        // Distance for gem to drop
+        public GemController gc;            // Reference to gem handler
+        public int dropDistance;            // Distance for gem to drop
     }
 
-    //private GameObject[,] allChars; 	// All character objects in the board
-    //private int[,] allCharsIndex; 		// Indexes of the characters in all tiles
-    private Gem[,] allGems;
-    private Gem draggedGem = new Gem();
-    private bool controllable = true;
-    private Vector2 mousePos = Vector2.zero;
-    private bool dragging = false;
+    private Gem[,] allGems;                 // Stores all gem objects on the board       
+    private Gem draggedGem = new Gem();     // Reference to the clone of the gem dragged
+    private bool controllable = true;       // Lock of board to prevent user controls
+    private Vector2 mousePos = Vector2.zero;// Vector of the mouse position
+    private bool dragging = false;          // Boolean object to show dragging status
 
-    public int width; 					// Board width
-    public int height; 					// Board height
-    //public GameObject tilePrefab; 		// Empty tile prefabs
-    public List<GameObject> gemResources = new List<GameObject>(); 	// List of character prefabs
+    public int width; 					    // Board width
+    public int height; 					    // Board height
+    public List<GameObject> gemResources = new List<GameObject>(); 	// List of gem prefabs
 
     // Start is called before the first frame update 
     void Start()
     {
-        //allChars = new GameObject[width, height];
-        //allCharsIndex = new int[width, height];
-
         SetUp();
     }
 
@@ -91,14 +85,12 @@ public class BoardManager : MonoBehaviour
         {
             mousePos = Camera.main.ScreenToWorldPoint(Input.mousePosition);
             dragging = true;
-            // TODO: create a clone of gem for dragging
-            createClone();
+            createClone(); // Create a gem clone
         } // When holding primary key (dragging)
         else if (Input.GetMouseButton(0) && dragging)
         {
             mousePos = Camera.main.ScreenToWorldPoint(Input.mousePosition);
-            // TODO: swap the gem clone with the adjacent gems along
-            //       the direction of the mouse
+            trackDragging();
         }
 
         // When ending with primary key (end of dragging)
@@ -112,20 +104,83 @@ public class BoardManager : MonoBehaviour
         }
     }
 
+    // Create a gem clone when dragging the gem
     void createClone()
     {
+        // Get mouse position
         int pos_x = Mathf.RoundToInt(mousePos.x);
         int pos_y = Mathf.RoundToInt(mousePos.y);
 
+        // Determine if the mouse is inside the board
         if (pos_x >= width || pos_x < 0 || pos_y > height || pos_y < 0)
         {
             Debug.Log("Click position out of board");
             return;
         }else
         {
+            // Select the gem at the mouse position
             Gem target = allGems[pos_x, pos_y];
             target.gc.select();
-            Color32 color = target.gemObject.GetComponent<Renderer>().material.color;
+
+            // Create the gem clone
+            GameObject gemClone = Instantiate(gemResources[target.resourceIndex],
+                new Vector2(pos_x, pos_y), Quaternion.identity);
+            draggedGem.gemObject = gemClone;
+
+            // Change the transparency so user can see the gem underneath 
+            Color32 color = target.gemObject.GetComponent<SpriteRenderer>().material.color;
+            color.a = 100;
+            target.gemObject.GetComponent<SpriteRenderer>().material.color = color;
+
+            // Change reference in list
+            allGems[pos_x, pos_y] = draggedGem;
         }
+    }
+
+    private void trackDragging()
+    {
+        float draggedX = draggedGem.gemObject.transform.position.x;
+        float draggedY = draggedGem.gemObject.transform.position.y;
+
+        // Get mouse position
+        int pos_x = Mathf.RoundToInt(mousePos.x);
+        int pos_y = Mathf.RoundToInt(mousePos.y);
+
+        // The gem to swap is the next gem at the direction
+        // of the mouse 
+        if (pos_x > draggedX && draggedX + 1 < width)
+            draggedX++;
+        else if (pos_x < draggedX && draggedX - 1 >= 0)
+            draggedX--;
+        else if (pos_y > draggedY && draggedY + 1 < height)
+            draggedY++;
+        else if (pos_y < draggedY && draggedY - 1 >= 0)
+            draggedY--;
+
+        // Get the target gem to swap with dragged gem
+        Gem swapTarget = allGems[(int) draggedX, (int) draggedY];
+        swapGems(draggedGem, swapTarget);
+    }
+
+    // Swap two gems
+    private void swapGems(Gem g1, Gem g2)
+    {
+        // TODO: Animation
+
+        // Get their positions
+        int x1 = (int) g1.gemObject.transform.position.x;
+        int y1 = (int) g1.gemObject.transform.position.y;
+        int x2 = (int) g2.gemObject.transform.position.x;
+        int y2 = (int) g2.gemObject.transform.position.y;
+
+        // Swap gem object positions
+        Vector2 temp = g2.gemObject.transform.position;
+        g2.gemObject.transform.position = g1.gemObject.transform.position;
+        g1.gemObject.transform.position = temp;
+
+        // Swap gems stored in allGems list
+        Gem tempGem = allGems[x1, y1];
+        allGems[x1, y1] = allGems[x2, y2];
+        allGems[x2, y2] = tempGem;
     }
 }
