@@ -11,6 +11,7 @@ public class BoardManager : MonoBehaviour
         public GameObject gemObject;
         public GemController gc;            // Reference to gem handler
         public int dropDistance;            // Distance for gem to drop
+        public bool isChecked;
     }
 
     private Gem[,] allGems;                 // Stores all gem objects on the board       
@@ -67,7 +68,8 @@ public class BoardManager : MonoBehaviour
                     resourceIndex = index,
                     gemObject = gem,
                     dropDistance = 0,
-                    gc = gem.GetComponent<GemController>()
+                    gc = gem.GetComponent<GemController>(),
+                    isChecked = false
                 };
             }
         }
@@ -101,7 +103,7 @@ public class BoardManager : MonoBehaviour
             trackDragging();
             mousePos = Camera.main.ScreenToWorldPoint(Input.mousePosition);
             // TODO: drop the gem
-            dropGem();
+            releaseGem();
             //controllable = false; // No controls should be made when matching gems
             // TODO: match gems
             dragging = false;
@@ -129,13 +131,15 @@ public class BoardManager : MonoBehaviour
             GameObject gemObjectClone = Instantiate(draggedGem.gemObject,
             new Vector2(pos_x, pos_y), Quaternion.identity);
             gemObjectClone.AddComponent<GemController>();
+            gemObjectClone.name = "(" + pos_x + "," + pos_y + ")";
 
             draggedGemClone = new Gem
             {
                 resourceIndex = draggedGem.resourceIndex,
                 gemObject = gemObjectClone,
                 dropDistance = 0,
-                gc = gemObjectClone.GetComponent<GemController>()
+                gc = gemObjectClone.GetComponent<GemController>(),
+                isChecked = false
             };
 
             draggedGem.gc.select();
@@ -192,9 +196,14 @@ public class BoardManager : MonoBehaviour
         if (!(x1 == x2 && y1 == y2))
         {
             // Swap gem object positions
-            Vector2 temp = g2.gemObject.transform.position;
+            Vector2 tempPos = g2.gemObject.transform.position;
             g2.gemObject.transform.position = g1.gemObject.transform.position;
-            g1.gemObject.transform.position = temp;
+            g1.gemObject.transform.position = tempPos;
+
+            // Swap object name
+            string tempName = g2.gemObject.name;
+            g2.gemObject.name = g1.gemObject.name;
+            g1.gemObject.name = tempName;
 
             // Swap gems stored in allGems list
             Gem tempGem = allGems[x1, y1];
@@ -203,15 +212,96 @@ public class BoardManager : MonoBehaviour
         }
     }
 
-    // Drop the dragged gem to current position
-    private void dropGem()
+    // Release the dragged gem to current position
+    private void releaseGem()
     {
         // Remove the reference to the dragged gem and destroy the object
         Destroy(draggedGem.gemObject);
         draggedGem = new Gem();
 
+        // Check Match
+        for (int i = 0; i < width; i ++)
+        {
+            for (int j = 0; j < height; j ++)
+            {
+                if (allGems[i, j].resourceIndex >= 0)
+                    checkMatch(i, j);
+            }
+        }
+        dropGems();
 
         // Remove the reference to the clone
         draggedGemClone = new Gem();
+    }
+
+    // Check if there are at least 3 identical gems at (x,y)
+    private void checkMatch(int x, int y)
+    {
+        Gem target = allGems[x, y];
+        int index = target.resourceIndex;
+
+        // Setting counters
+        int up = 0, down = 0, left = 0, right = 0;
+
+        // Four loops to detect the number of identical gems at each direction
+        while (y + up + 1 < height && allGems[x,y + up + 1].resourceIndex == index)
+            up++;
+        while (y - down - 1 >= 0 && allGems[x, y - down - 1].resourceIndex == index)
+            down++;
+        while (x + right + 1 < width && allGems[x + right + 1,y].resourceIndex == index)
+            right++;
+        while (x - left - 1 >= 0 && allGems[x - left - 1, y].resourceIndex == index)
+            left++;
+
+
+        if (left + right >= 2)
+        {
+            for (int i = x - left; i <= x + right; i ++)
+            {
+                Gem gemToRemvoe = allGems[i, y];
+                allGems[i,y].resourceIndex = -1;
+                Destroy(gemToRemvoe.gemObject);
+
+                for (int k = y + 1; k < height; k ++)
+                {
+                    //Debug.Log(x + "," + k + "  caused by " + i + "," + y);
+                    allGems[i,k].dropDistance++;
+                }
+            }
+        }
+        if (up + down >= 2)
+        {
+            for (int j = y - down; j <= y + up; j ++)
+            {
+                Gem gemToRemove = allGems[x, j];
+                allGems[x,j].resourceIndex = -1;
+                Destroy(gemToRemove.gemObject);
+
+                for (int k = j + up + 1; k < height; k++)
+                {
+                    //Debug.Log(x + "," + k + "  caused by " + x + "," + k);
+                    allGems[x,k].dropDistance += up + down + 1;
+                }
+            }
+        }
+    }
+
+    // Drop all gems based on the drop distance recorded
+    private void dropGems()
+    {
+        Debug.Log("Start to drop");
+        for (int i = 0; i < width; i ++)
+        {
+            for (int j = 0; j < height; j ++)
+            {
+                Gem target = allGems[i, j];
+                if (target.dropDistance > 0)
+                {
+                    target.gc.drop(target.dropDistance);
+                    Debug.Log("Found Drop");
+                }
+                target.dropDistance = 0;
+            }
+        }
     }
 }

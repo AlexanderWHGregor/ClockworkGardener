@@ -27,4 +27,11 @@ public class GemController : MonoBehaviour {
     {
         selected = false;
     }
+
+    public void drop(int distance)
+    {
+        int currentX = Mathf.RoundToInt(transform.position.x);
+        int currentY = Mathf.RoundToInt(transform.position.y);
+        transform.position = new Vector2(currentX, currentY - distance);
+    }
 }
