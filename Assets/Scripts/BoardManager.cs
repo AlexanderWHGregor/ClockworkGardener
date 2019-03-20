@@ -61,7 +61,7 @@ public class BoardManager : MonoBehaviour
 
                 // Creating the object
                 GameObject gem = Instantiate(gemResources[index], pos, Quaternion.identity);
-                gem.transform.name = "(" + i + "," + j + ")";
+                gem.transform.name = "(" + i + "," + j + ") : " + index;
                 gem.AddComponent<GemController>();
                 allGems[i, j] = new Gem
                 {
@@ -131,7 +131,7 @@ public class BoardManager : MonoBehaviour
             GameObject gemObjectClone = Instantiate(draggedGem.gemObject,
             new Vector2(pos_x, pos_y), Quaternion.identity);
             gemObjectClone.AddComponent<GemController>();
-            gemObjectClone.name = "(" + pos_x + "," + pos_y + ")";
+            gemObjectClone.name = "(" + pos_x + "," + pos_y + ") : " + draggedGem.resourceIndex;
 
             draggedGemClone = new Gem
             {
@@ -151,12 +151,16 @@ public class BoardManager : MonoBehaviour
 
             // Change reference in list
             allGems[pos_x, pos_y] = draggedGemClone;
+
         }
     }
 
     // Move the dragged gem toward the direction of the mouse 
     private void trackDragging()
     {
+        //if (draggedGemClone.gemObject == null)
+            //Debug.Log(draggedGemClone.resourceIndex);
+
         int draggedX = Mathf.RoundToInt(draggedGemClone.gemObject.transform.position.x);
         int draggedY = Mathf.RoundToInt(draggedGemClone.gemObject.transform.position.y);
 
@@ -178,8 +182,7 @@ public class BoardManager : MonoBehaviour
 
 
         // Get the target gem to swap with dragged gem
-        Gem swapTarget = allGems[draggedX, draggedY];
-        swapGems(draggedGemClone, swapTarget);
+        swapGems(draggedGemClone, allGems[draggedX, draggedY]);
     }
 
     // Swap two gems
@@ -229,6 +232,7 @@ public class BoardManager : MonoBehaviour
             }
         }
         dropGems();
+        //debugCheck();
 
         // Remove the reference to the clone
         draggedGemClone = new Gem();
@@ -254,42 +258,45 @@ public class BoardManager : MonoBehaviour
             left++;
 
 
-        if (left + right >= 2)
+        if (left + right >= 2 && left + right >= up + down)
         {
             for (int i = x - left; i <= x + right; i ++)
             {
-                Gem gemToRemvoe = allGems[i, y];
                 allGems[i,y].resourceIndex = -1;
-                Destroy(gemToRemvoe.gemObject);
+                //Debug.Log("Destroy: " + i + " , " + y);
+                Destroy(allGems[i,y].gemObject);
+                allGems[i, y].gemObject = null;
 
+                /*
                 for (int k = y + 1; k < height; k ++)
                 {
                     //Debug.Log(x + "," + k + "  caused by " + i + "," + y);
                     allGems[i,k].dropDistance++;
                 }
+                */
             }
-        }
-        if (up + down >= 2)
+        }else if (up + down >= 2)
         {
             for (int j = y - down; j <= y + up; j ++)
             {
-                Gem gemToRemove = allGems[x, j];
                 allGems[x,j].resourceIndex = -1;
-                Destroy(gemToRemove.gemObject);
-
-                for (int k = j + up + 1; k < height; k++)
-                {
-                    //Debug.Log(x + "," + k + "  caused by " + x + "," + k);
-                    allGems[x,k].dropDistance += up + down + 1;
-                }
+                //Debug.Log("Destroy: " + x + " , " + j);
+                Destroy(allGems[x,j].gemObject);
+                allGems[x, j].gemObject = null;
             }
+            /*
+            for (int k = y + up + 1; k < height; k++)
+            {
+                allGems[x, k].dropDistance += up + down + 1;
+            }
+            */
         }
     }
 
     // Drop all gems based on the drop distance recorded
     private void dropGems()
     {
-        Debug.Log("Start to drop");
+        /*
         for (int i = 0; i < width; i ++)
         {
             for (int j = 0; j < height; j ++)
@@ -297,10 +304,79 @@ public class BoardManager : MonoBehaviour
                 Gem target = allGems[i, j];
                 if (target.dropDistance > 0)
                 {
-                    target.gc.drop(target.dropDistance);
-                    Debug.Log("Found Drop");
+                    if (j - target.dropDistance < 0)
+                    {
+                        Debug.Log("Drop: " + i + "," + j + " down " + target.dropDistance);
+                    }
+                    if (allGems[i, j - target.dropDistance].resourceIndex == -1)
+                    {
+                        target.gc.drop(target.dropDistance);
+                        allGems[i, j - target.dropDistance] = target;
+                        target.dropDistance = 0;
+
+                        allGems[i, j].resourceIndex = -1;
+                    }
                 }
-                target.dropDistance = 0;
+            }
+        }
+        */
+
+        for (int i = 0; i < width; i++)
+        {
+            int distance = 0;
+            for (int j = 0; j < height; j++)
+            {
+                if (allGems[i,j].resourceIndex == -1)
+                {
+                    if (allGems[i, j].gemObject != null)
+                        allGems[i, j].gemObject.name += " : " + -1;
+                    distance++;
+                }else if (distance > 0)
+                {
+                    allGems[i, j].gc.drop(distance);
+
+                    if (j - distance < 0)
+                        Debug.Log("Error: (" + i + "," + j + ") dropping " + distance);
+                    else
+                    {
+                        if (allGems[i, j - distance].gemObject != null)
+                            Debug.Log("Position occupied by others");
+                        else
+                        {
+                            allGems[i, j].gc.drop(distance);
+                            allGems[i, j - distance].gemObject = allGems[i, j].gemObject;
+                            allGems[i, j].gemObject = null;
+                            allGems[i, j - distance].resourceIndex = allGems[i, j].resourceIndex;
+                        }
+                        
+                    }
+
+                    if (j + 1 < height && allGems[i, j + 1].resourceIndex == -1)
+                        distance = 0;
+                }
+            }
+        }
+    }
+
+    private void debugCheck()
+    {
+        for (int i = 0; i < width; i ++)
+        {
+            for (int j = 0; j < height; j ++)
+            {
+                if (allGems[i,j].resourceIndex == -1 &&
+                    allGems[i,j].gemObject != null)
+                {
+                    Debug.Log(i + "," + j + " Index Error");
+                    Debug.Log("Position: " + allGems[i, j].gemObject.transform.position);
+                }
+
+                if (allGems[i,j].gemObject != null &&
+                    (allGems[i,j].gemObject.transform.position.x != i ||
+                    allGems[i,j].gemObject.transform.position.y != j))
+                {
+                    Debug.Log(i + "," + j + " Position Error");
+                }
             }
         }
     }
