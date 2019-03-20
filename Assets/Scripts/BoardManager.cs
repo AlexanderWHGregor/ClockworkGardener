@@ -9,9 +9,9 @@ public class BoardManager : MonoBehaviour
     {
         public int resourceIndex;           // Determines what the gem looks like               
         public GameObject gemObject;
-        public GemController gc;            // Reference to gem handler
+        //public GemController gc;            // Reference to gem handler
         public int dropDistance;            // Distance for gem to drop
-        public bool isChecked;
+        public bool isSelected;
     }
 
     private Gem[,] allGems;                 // Stores all gem objects on the board       
@@ -68,8 +68,8 @@ public class BoardManager : MonoBehaviour
                     resourceIndex = index,
                     gemObject = gem,
                     dropDistance = 0,
-                    gc = gem.GetComponent<GemController>(),
-                    isChecked = false
+                    //gc = gem.GetComponent<GemController>(),
+                    isSelected = false
                 };
             }
         }
@@ -102,11 +102,17 @@ public class BoardManager : MonoBehaviour
         {
             trackDragging();
             mousePos = Camera.main.ScreenToWorldPoint(Input.mousePosition);
-            // TODO: drop the gem
             releaseGem();
             //controllable = false; // No controls should be made when matching gems
-            // TODO: match gems
             dragging = false;
+        }
+
+        // Check selected gem
+        if (draggedGem.isSelected)
+        {
+            draggedGem.gemObject.transform.position = Camera.main.ScreenToWorldPoint(Input.mousePosition) + new Vector3(0, 0, 5f);
+            if (Input.GetMouseButtonUp(0))
+                draggedGem.isSelected = false;
         }
     }
 
@@ -138,11 +144,12 @@ public class BoardManager : MonoBehaviour
                 resourceIndex = draggedGem.resourceIndex,
                 gemObject = gemObjectClone,
                 dropDistance = 0,
-                gc = gemObjectClone.GetComponent<GemController>(),
-                isChecked = false
+                //gc = gemObjectClone.GetComponent<GemController>(),
+                isSelected = false
             };
 
-            draggedGem.gc.select();
+            //draggedGem.gc.select();
+            draggedGem.isSelected = true;
 
             // Change the transparency so user can see the gem underneath 
             Color32 color = draggedGem.gemObject.GetComponent<SpriteRenderer>().material.color;
@@ -221,6 +228,7 @@ public class BoardManager : MonoBehaviour
         // Remove the reference to the dragged gem and destroy the object
         Destroy(draggedGem.gemObject);
         draggedGem = new Gem();
+        draggedGem.isSelected = false;
 
         bool matchFound = true;
 
@@ -239,7 +247,6 @@ public class BoardManager : MonoBehaviour
             dropGems();
             debugCheck();
         }
-
 
         // Remove the reference to the clone
         draggedGemClone = new Gem();
@@ -305,56 +312,26 @@ public class BoardManager : MonoBehaviour
         return found;
     }
 
+
     // Drop all gems based on the drop distance recorded
     private void dropGems()
     {
-        for (int i = 0; i < width; i++)
+        for (int i = 0; i < width; i ++)
         {
-            int distance = 0;
-            int emptyFound = 0;
+            Vector2 emptyPos = getLowestEmpty(i);
 
-            for (int j = 0; j < height ; j++)
+            while (emptyPos.x >= 0)
             {
-                if (allGems[i,j].resourceIndex == -1)
-                {
-                    if (allGems[i, j].gemObject != null)
-                        allGems[i, j].gemObject.name += " : " + -1;
-                    distance++;
-                    emptyFound++;
-                }else if (distance > 0)
-                {
-                    if (j - distance < 0)
-                        Debug.Log("Error: (" + i + "," + j + ") dropping " + distance);
-                    else
-                    {
-                        if (allGems[i, j - distance].gemObject != null)
-                            Debug.Log("Position occupied by others");
-                        else
-                        {
-                            allGems[i, j].gc.drop(distance);
-                            allGems[i, j - distance].gemObject = allGems[i, j].gemObject;
-                            allGems[i, j - distance].gemObject.name = "(" + i + "," + j + ") : " + allGems[i, j].resourceIndex;
-                            allGems[i, j].gemObject = null;
-                            allGems[i, j - distance].resourceIndex = allGems[i, j].resourceIndex;
-                        }
-                    }
+                dropByOne(i,Mathf.RoundToInt(emptyPos.y));
+                allGems[i,height-1] = generateGem(i, height - 1);
 
-                    if (j + 1 < height && allGems[i, j + 1].resourceIndex == -1)
-                        distance = 0;
-                    if (j + 1 == height && emptyFound > 0)
-                    {
-                        for (int k = 0; k < emptyFound; k ++)
-                        {
-                            allGems[i, j - distance + k + 1] = generateGem(i, j - distance + k + 1);
-                        }
-                    }
-                }
-
-                
+                emptyPos = getLowestEmpty(i);
             }
+
         }
     }
 
+    // Randomly generate and return a new gem
     private Gem generateGem(int x, int y)
     {
         Vector2 pos = new Vector2(x, y);
@@ -368,8 +345,73 @@ public class BoardManager : MonoBehaviour
             resourceIndex = index,
             gemObject = gem,
             dropDistance = 0,
-            gc = gem.GetComponent<GemController>(),
+            isSelected = false,
         };
+    }
+
+    private Vector2 getLowestEmpty(int col)
+    {
+        for (int i = 0; i < height; i ++)
+        {
+            if (isEmpty(allGems[col, i])) return new Vector2(col, i); 
+        }
+
+        return new Vector2(-1,-1);
+    }
+
+    // Determine if the gem is empty
+    private bool isEmpty(Gem gem)
+    {
+        if (gem.gemObject == null) return true;
+        if (gem.resourceIndex == -1) return true;
+
+        return false;
+    }
+
+    // Drop all gems in the column by one 
+    private void dropByOne(int col, int row)
+    {
+        for (int i = row + 1; i < height; i ++)
+        {
+            if (!isEmpty(allGems[col,i]))
+            {
+                bool finished = false;
+                StartCoroutine(moveSlowly(allGems[col, i].gemObject, new Vector2(col, i - 1), finished));
+
+                int counter = 0;
+                while (!finished && counter < 20) { counter++; }
+
+                allGems[col, i].gemObject.transform.position = 
+                new Vector2(col, i - 1);
+                allGems[col, i - 1] = new Gem
+                {
+                    resourceIndex = allGems[col,i].resourceIndex,
+                    gemObject = allGems[col, i].gemObject,
+                    dropDistance = 0,
+                    isSelected = false
+                };
+
+                allGems[col, i].gemObject = null;
+                allGems[col, i].resourceIndex = -1;
+            }
+        }
+    }
+
+    // Gradually drop the gem    Same function used in "GemsAndCombos"
+    private IEnumerator moveSlowly(GameObject obj, Vector2 dest, bool finished)
+    {
+        WaitForSeconds delay = new WaitForSeconds(0.01f); //Delay between every drop frame
+        Vector2 start = obj.transform.position;
+
+        float lerpPercent = 0;
+
+        while (lerpPercent <= 1)
+        {
+            obj.transform.position = Vector2.Lerp(start, dest, lerpPercent);
+            lerpPercent += 0.05f; //Distance of every drop frame
+            yield return delay;
+        }
+        finished = true;
     }
 
     private void debugCheck()
@@ -386,8 +428,8 @@ public class BoardManager : MonoBehaviour
                 }
 
                 if (allGems[i,j].gemObject != null &&
-                    (allGems[i,j].gemObject.transform.position.x != i ||
-                    allGems[i,j].gemObject.transform.position.y != j))
+                    (Mathf.RoundToInt(allGems[i,j].gemObject.transform.position.x) != i ||
+                    Mathf.RoundToInt(allGems[i,j].gemObject.transform.position.y) != j))
                 {
                     Debug.Log(i + "," + j + " Position Error:\n" + 
                         "Array: " + i + "," + j + "\tActual: " +
