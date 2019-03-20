@@ -34,6 +34,7 @@ public class BoardManager : MonoBehaviour
     // Create the board using a 2D array storing all the tiles stating at (0,0)
     private void SetUp()
     {
+
         // 2 loops to create the game board from (0,0)
         // Camera position should be modified to make sure
         // the game board is at the center of the screen
@@ -273,8 +274,8 @@ public class BoardManager : MonoBehaviour
         if (left + right >= 2 && left + right >= up + down)
         {
             found = true;
-            //Debug.Log("Match Start: " + new Vector2(x - left, y) + "\n" +
-            //"Match End: " + new Vector2(x + right, y));
+            Debug.Log("Match Start: " + new Vector2(x - left, y) + "\n" +
+            "\tMatch End: " + new Vector2(x + right, y));
 
             for (int i = x - left; i <= x + right; i ++)
             {
@@ -285,8 +286,8 @@ public class BoardManager : MonoBehaviour
         }else if (up + down >= 2)
         {
             found = true;
-            //Debug.Log("Match Start: " + new Vector2(x, y-down) + "\n" +
-            //"Match End: " + new Vector2(x, y+up));
+            Debug.Log("Match Start: " + new Vector2(x, y-down) + "\n" +
+            "\tMatch End: " + new Vector2(x, y+up));
             for (int j = y - down; j <= y + up; j ++)
             {
                 allGems[x,j].resourceIndex = -1;
@@ -294,6 +295,8 @@ public class BoardManager : MonoBehaviour
                 allGems[x, j].gemObject = null;
             }
         }
+
+
 
         return found;
     }
@@ -404,7 +407,6 @@ public class BoardManager : MonoBehaviour
 
     private void debugCheck()
     {
-        Debug.Log("Start to check");
         for (int i = 0; i < width; i ++)
         {
             for (int j = 0; j < height; j ++)
