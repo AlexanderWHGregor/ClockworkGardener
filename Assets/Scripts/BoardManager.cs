@@ -38,7 +38,7 @@ public class BoardManager : MonoBehaviour
         // 2 loops to create the game board from (0,0)
         // Camera position should be modified to make sure
         // the game board is at the center of the screen
-        allGems = new Gem[width, height];
+        allGems = new Gem[width, height + 1];
 
         for (int i = 0; i < width; i++)
         {
@@ -169,6 +169,8 @@ public class BoardManager : MonoBehaviour
         int draggedX = Mathf.RoundToInt(draggedGemClone.gemObject.transform.position.x);
         int draggedY = Mathf.RoundToInt(draggedGemClone.gemObject.transform.position.y);
 
+        int targetX = draggedX, targetY = draggedY;
+
         // Get mouse position
         int pos_x = Mathf.RoundToInt(mousePos.x);
         int pos_y = Mathf.RoundToInt(mousePos.y);
@@ -176,48 +178,51 @@ public class BoardManager : MonoBehaviour
         // The gem to swap is the next gem at the direction
         // of the mouse 
         if (pos_x > draggedX && draggedX + 1 < width)
-            draggedX++;
+            targetX++;
         else if (pos_x < draggedX && draggedX - 1 >= 0)
-            draggedX--;
+            targetX--;
         else if (pos_y > draggedY && draggedY + 1 < height)
-            draggedY++;
+            targetY++;
         else if (pos_y < draggedY && draggedY - 1 >= 0)
-            draggedY--;
+            targetY--;
 
 
 
         // Get the target gem to swap with dragged gem
-        swapGems(draggedGemClone, allGems[draggedX, draggedY]);
+        swapGems(draggedX,draggedY,targetX,targetY);
     }
 
     // Swap two gems
-    private void swapGems(Gem g1, Gem g2)
+    private void swapGems(int x1, int y1, int x2, int y2)
     {
         // TODO: Animation
 
-        // Get their positions
-        int x1 = Mathf.RoundToInt(g1.gemObject.transform.position.x);
-        int y1 = Mathf.RoundToInt(g1.gemObject.transform.position.y);
-        int x2 = Mathf.RoundToInt(g2.gemObject.transform.position.x);
-        int y2 = Mathf.RoundToInt(g2.gemObject.transform.position.y);
+        if (x1 == x2 && y1 == y2) return;
 
-        if (!(x1 == x2 && y1 == y2))
+        if (allGems[x1, y1].gemObject == null ||
+            allGems[x2, y2].gemObject == null)
+            return;
+
+        // Swap positions
+        Vector2 tempPos = allGems[x1, y1].gemObject.transform.position;
+        allGems[x1, y1].gemObject.transform.position =
+            allGems[x2, y2].gemObject.transform.position;
+        allGems[x2, y2].gemObject.transform.position = tempPos;
+
+        // Swap gems in the array
+        Gem temp = new Gem
         {
-            // Swap gem object positions
-            Vector2 tempPos = g2.gemObject.transform.position;
-            g2.gemObject.transform.position = g1.gemObject.transform.position;
-            g1.gemObject.transform.position = tempPos;
-
-            // Swap object name
-            string tempName = g2.gemObject.name;
-            g2.gemObject.name = g1.gemObject.name;
-            g1.gemObject.name = tempName;
-
-            // Swap gems stored in allGems list
-            Gem tempGem = allGems[x1, y1];
-            allGems[x1, y1] = allGems[x2, y2];
-            allGems[x2, y2] = tempGem;
-        }
+            resourceIndex = allGems[x1, y1].resourceIndex,
+            gemObject = allGems[x1, y1].gemObject,
+            isSelected = false
+        };
+        allGems[x1, y1] = new Gem
+        {
+            resourceIndex = allGems[x2, y2].resourceIndex,
+            gemObject = allGems[x2, y2].gemObject,
+            isSelected = false
+        };
+        allGems[x2, y2] = temp;
     }
 
     // Release the dragged gem to current position
@@ -262,41 +267,47 @@ public class BoardManager : MonoBehaviour
         int up = 0, down = 0, left = 0, right = 0;
 
         // Four loops to detect the number of identical gems at each direction
-        while (y + up + 1 < height && allGems[x,y + up + 1].resourceIndex == index)
+        while (y + up + 1 < height && allGems[x, y + up + 1].resourceIndex == index)
             up++;
         while (y - down - 1 >= 0 && allGems[x, y - down - 1].resourceIndex == index)
             down++;
-        while (x + right + 1 < width && allGems[x + right + 1,y].resourceIndex == index)
+        while (x + right + 1 < width && allGems[x + right + 1, y].resourceIndex == index)
             right++;
         while (x - left - 1 >= 0 && allGems[x - left - 1, y].resourceIndex == index)
             left++;
 
+
         if (left + right >= 2 && left + right >= up + down)
         {
+            Debug.Log("-------------------");
             found = true;
-            Debug.Log("Match Start: " + new Vector2(x - left, y) + "\n" +
-            "\tMatch End: " + new Vector2(x + right, y));
+            //Debug.Log("Match Start: " + new Vector2(x - left, y) + "\n" +
+            //"Match End: " + new Vector2(x + right, y));
 
             for (int i = x - left; i <= x + right; i ++)
             {
+                Debug.Log("Destroyed: " + allGems[i, y].gemObject.tag);
                 allGems[i,y].resourceIndex = -1;
                 Destroy(allGems[i,y].gemObject);
                 allGems[i, y].gemObject = null;
             }
-        }else if (up + down >= 2)
+            Debug.Log("-------------------");
+        }
+        else if (up + down >= 2)
         {
+            Debug.Log("-------------------");
             found = true;
-            Debug.Log("Match Start: " + new Vector2(x, y-down) + "\n" +
-            "\tMatch End: " + new Vector2(x, y+up));
+            //Debug.Log("Match Start: " + new Vector2(x, y-down) + "\n" +
+            //"Match End: " + new Vector2(x, y+up));
             for (int j = y - down; j <= y + up; j ++)
             {
+                Debug.Log("Destroyed: " + allGems[x,j].gemObject.tag);
                 allGems[x,j].resourceIndex = -1;
                 Destroy(allGems[x,j].gemObject);
                 allGems[x, j].gemObject = null;
             }
+            Debug.Log("-------------------");
         }
-
-
 
         return found;
     }
@@ -311,8 +322,9 @@ public class BoardManager : MonoBehaviour
 
             while (emptyPos.x >= 0)
             {
+                allGems[i, height] = generateGem(i, height);
                 dropByOne(i,Mathf.RoundToInt(emptyPos.y));
-                allGems[i,height-1] = generateGem(i, height - 1);
+                //allGems[i,height-1] = generateGem(i, height - 1);
 
                 emptyPos = getLowestEmpty(i);
             }
@@ -359,7 +371,7 @@ public class BoardManager : MonoBehaviour
     // Drop all gems in the column by one 
     private void dropByOne(int col, int row)
     {
-        for (int i = row + 1; i < height; i ++)
+        for (int i = row + 1; i < height + 1; i ++)
         {
             if (!isEmpty(allGems[col,i]))
             {
