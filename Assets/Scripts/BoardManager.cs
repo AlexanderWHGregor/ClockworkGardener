@@ -222,25 +222,33 @@ public class BoardManager : MonoBehaviour
         Destroy(draggedGem.gemObject);
         draggedGem = new Gem();
 
-        // Check Match
-        for (int i = 0; i < width; i ++)
+        bool matchFound = true;
+
+        while (matchFound)
         {
-            for (int j = 0; j < height; j ++)
+            matchFound = false;
+            // Check Match
+            for (int i = 0; i < width; i++)
             {
-                if (allGems[i, j].resourceIndex >= 0)
-                    checkMatch(i, j);
+                for (int j = 0; j < height; j++)
+                {
+                    if (allGems[i, j].resourceIndex >= 0 && checkMatch(i, j))
+                        matchFound = true;
+                }
             }
+            dropGems();
+            debugCheck();
         }
-        dropGems();
-        //debugCheck();
+
 
         // Remove the reference to the clone
         draggedGemClone = new Gem();
     }
 
     // Check if there are at least 3 identical gems at (x,y)
-    private void checkMatch(int x, int y)
+    private bool checkMatch(int x, int y)
     {
+        bool found = false;
         Gem target = allGems[x, y];
         int index = target.resourceIndex;
 
@@ -260,6 +268,7 @@ public class BoardManager : MonoBehaviour
 
         if (left + right >= 2 && left + right >= up + down)
         {
+            found = true;
             for (int i = x - left; i <= x + right; i ++)
             {
                 allGems[i,y].resourceIndex = -1;
@@ -277,6 +286,7 @@ public class BoardManager : MonoBehaviour
             }
         }else if (up + down >= 2)
         {
+            found = true;
             for (int j = y - down; j <= y + up; j ++)
             {
                 allGems[x,j].resourceIndex = -1;
@@ -291,50 +301,28 @@ public class BoardManager : MonoBehaviour
             }
             */
         }
+
+        return found;
     }
 
     // Drop all gems based on the drop distance recorded
     private void dropGems()
     {
-        /*
-        for (int i = 0; i < width; i ++)
-        {
-            for (int j = 0; j < height; j ++)
-            {
-                Gem target = allGems[i, j];
-                if (target.dropDistance > 0)
-                {
-                    if (j - target.dropDistance < 0)
-                    {
-                        Debug.Log("Drop: " + i + "," + j + " down " + target.dropDistance);
-                    }
-                    if (allGems[i, j - target.dropDistance].resourceIndex == -1)
-                    {
-                        target.gc.drop(target.dropDistance);
-                        allGems[i, j - target.dropDistance] = target;
-                        target.dropDistance = 0;
-
-                        allGems[i, j].resourceIndex = -1;
-                    }
-                }
-            }
-        }
-        */
-
         for (int i = 0; i < width; i++)
         {
             int distance = 0;
-            for (int j = 0; j < height; j++)
+            int emptyFound = 0;
+
+            for (int j = 0; j < height ; j++)
             {
                 if (allGems[i,j].resourceIndex == -1)
                 {
                     if (allGems[i, j].gemObject != null)
                         allGems[i, j].gemObject.name += " : " + -1;
                     distance++;
+                    emptyFound++;
                 }else if (distance > 0)
                 {
-                    allGems[i, j].gc.drop(distance);
-
                     if (j - distance < 0)
                         Debug.Log("Error: (" + i + "," + j + ") dropping " + distance);
                     else
@@ -345,17 +333,43 @@ public class BoardManager : MonoBehaviour
                         {
                             allGems[i, j].gc.drop(distance);
                             allGems[i, j - distance].gemObject = allGems[i, j].gemObject;
+                            allGems[i, j - distance].gemObject.name = "(" + i + "," + j + ") : " + allGems[i, j].resourceIndex;
                             allGems[i, j].gemObject = null;
                             allGems[i, j - distance].resourceIndex = allGems[i, j].resourceIndex;
                         }
-                        
                     }
 
                     if (j + 1 < height && allGems[i, j + 1].resourceIndex == -1)
                         distance = 0;
+                    if (j + 1 == height && emptyFound > 0)
+                    {
+                        for (int k = 0; k < emptyFound; k ++)
+                        {
+                            allGems[i, j - distance + k + 1] = generateGem(i, j - distance + k + 1);
+                        }
+                    }
                 }
+
+                
             }
         }
+    }
+
+    private Gem generateGem(int x, int y)
+    {
+        Vector2 pos = new Vector2(x, y);
+        int index = Random.Range(0, gemResources.Count);
+
+        GameObject gem = Instantiate(gemResources[index], pos, Quaternion.identity);
+        gem.transform.name = "(" + x + "," + y + ") : " + index;
+        gem.AddComponent<GemController>();
+        return new Gem
+        {
+            resourceIndex = index,
+            gemObject = gem,
+            dropDistance = 0,
+            gc = gem.GetComponent<GemController>(),
+        };
     }
 
     private void debugCheck()
@@ -375,9 +389,14 @@ public class BoardManager : MonoBehaviour
                     (allGems[i,j].gemObject.transform.position.x != i ||
                     allGems[i,j].gemObject.transform.position.y != j))
                 {
-                    Debug.Log(i + "," + j + " Position Error");
+                    Debug.Log(i + "," + j + " Position Error:\n" + 
+                        "Array: " + i + "," + j + "\tActual: " +
+                        allGems[i,j].gemObject.transform.position.x + 
+                        "," + allGems[i,j].gemObject.transform.position.y);
                 }
             }
         }
     }
+
+    
 }
