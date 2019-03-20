@@ -108,7 +108,7 @@ public class BoardManager : MonoBehaviour
         }
 
         // Check selected gem
-        if (draggedGem.isSelected)
+        if (draggedGem.gemObject != null && draggedGem.isSelected)
         {
             draggedGem.gemObject.transform.position = Camera.main.ScreenToWorldPoint(Input.mousePosition) + new Vector3(0, 0, 5f);
             if (Input.GetMouseButtonUp(0))
@@ -144,7 +144,6 @@ public class BoardManager : MonoBehaviour
                 resourceIndex = draggedGem.resourceIndex,
                 gemObject = gemObjectClone,
                 dropDistance = 0,
-                //gc = gemObjectClone.GetComponent<GemController>(),
                 isSelected = false
             };
 
@@ -165,8 +164,6 @@ public class BoardManager : MonoBehaviour
     // Move the dragged gem toward the direction of the mouse 
     private void trackDragging()
     {
-        //if (draggedGemClone.gemObject == null)
-            //Debug.Log(draggedGemClone.resourceIndex);
 
         int draggedX = Mathf.RoundToInt(draggedGemClone.gemObject.transform.position.x);
         int draggedY = Mathf.RoundToInt(draggedGemClone.gemObject.transform.position.y);
@@ -244,6 +241,7 @@ public class BoardManager : MonoBehaviour
                         matchFound = true;
                 }
             }
+
             dropGems();
             debugCheck();
         }
@@ -272,41 +270,29 @@ public class BoardManager : MonoBehaviour
         while (x - left - 1 >= 0 && allGems[x - left - 1, y].resourceIndex == index)
             left++;
 
-
         if (left + right >= 2 && left + right >= up + down)
         {
             found = true;
+            //Debug.Log("Match Start: " + new Vector2(x - left, y) + "\n" +
+            //"Match End: " + new Vector2(x + right, y));
+
             for (int i = x - left; i <= x + right; i ++)
             {
                 allGems[i,y].resourceIndex = -1;
-                //Debug.Log("Destroy: " + i + " , " + y);
                 Destroy(allGems[i,y].gemObject);
                 allGems[i, y].gemObject = null;
-
-                /*
-                for (int k = y + 1; k < height; k ++)
-                {
-                    //Debug.Log(x + "," + k + "  caused by " + i + "," + y);
-                    allGems[i,k].dropDistance++;
-                }
-                */
             }
         }else if (up + down >= 2)
         {
             found = true;
+            //Debug.Log("Match Start: " + new Vector2(x, y-down) + "\n" +
+            //"Match End: " + new Vector2(x, y+up));
             for (int j = y - down; j <= y + up; j ++)
             {
                 allGems[x,j].resourceIndex = -1;
-                //Debug.Log("Destroy: " + x + " , " + j);
                 Destroy(allGems[x,j].gemObject);
                 allGems[x, j].gemObject = null;
             }
-            /*
-            for (int k = y + up + 1; k < height; k++)
-            {
-                allGems[x, k].dropDistance += up + down + 1;
-            }
-            */
         }
 
         return found;
@@ -339,7 +325,6 @@ public class BoardManager : MonoBehaviour
 
         GameObject gem = Instantiate(gemResources[index], pos, Quaternion.identity);
         gem.transform.name = "(" + x + "," + y + ") : " + index;
-        gem.AddComponent<GemController>();
         return new Gem
         {
             resourceIndex = index,
@@ -378,11 +363,7 @@ public class BoardManager : MonoBehaviour
                 bool finished = false;
                 StartCoroutine(moveSlowly(allGems[col, i].gemObject, new Vector2(col, i - 1), finished));
 
-                int counter = 0;
-                while (!finished && counter < 20) { counter++; }
-
-                allGems[col, i].gemObject.transform.position = 
-                new Vector2(col, i - 1);
+                allGems[col, i].gemObject.transform.position = new Vector2(col, i - 1);
                 allGems[col, i - 1] = new Gem
                 {
                     resourceIndex = allGems[col,i].resourceIndex,
@@ -390,6 +371,8 @@ public class BoardManager : MonoBehaviour
                     dropDistance = 0,
                     isSelected = false
                 };
+                allGems[col,i-1].gemObject.name = "(" + col + "," + (i-1) + 
+                ") : " + allGems[col,i-1].resourceIndex;
 
                 allGems[col, i].gemObject = null;
                 allGems[col, i].resourceIndex = -1;
@@ -401,11 +384,16 @@ public class BoardManager : MonoBehaviour
     private IEnumerator moveSlowly(GameObject obj, Vector2 dest, bool finished)
     {
         WaitForSeconds delay = new WaitForSeconds(0.01f); //Delay between every drop frame
+
+        if (!obj.activeInHierarchy) yield return null;
+
         Vector2 start = obj.transform.position;
 
         float lerpPercent = 0;
 
-        while (lerpPercent <= 1)
+        // TODO: Missingreference Exception when the object is destroyed before 
+        //       the end of the coroutine (only affects dropping animation)
+        while (lerpPercent <= 1 && obj != null) 
         {
             obj.transform.position = Vector2.Lerp(start, dest, lerpPercent);
             lerpPercent += 0.05f; //Distance of every drop frame
@@ -416,10 +404,16 @@ public class BoardManager : MonoBehaviour
 
     private void debugCheck()
     {
+        Debug.Log("Start to check");
         for (int i = 0; i < width; i ++)
         {
             for (int j = 0; j < height; j ++)
             {
+                if (allGems[i, j].gemObject == null)
+                {
+                    Debug.Log(i + "," + j + " Object Missing!");
+                }
+
                 if (allGems[i,j].resourceIndex == -1 &&
                     allGems[i,j].gemObject != null)
                 {
@@ -436,9 +430,31 @@ public class BoardManager : MonoBehaviour
                         allGems[i,j].gemObject.transform.position.x + 
                         "," + allGems[i,j].gemObject.transform.position.y);
                 }
+
+                if (string.Compare(allGems[i, j].gemObject.tag, getPrefabName(allGems[i, j])) != 0)
+                {
+                    Debug.Log(i + "," + j + " Index Error");
+                }
             }
         }
     }
 
-    
+    private string getPrefabName(Gem gem)
+    {
+        switch (gem.resourceIndex)
+        {
+            case 0:
+                return "4star";
+            case 1:
+                return "6star";
+            case 2:
+                return "heart";
+            case 3:
+                return "circle";
+            case 4:
+                return "diamond";
+            default:
+                return "empty";
+        }
+    }
 }
