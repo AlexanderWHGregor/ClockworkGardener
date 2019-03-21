@@ -9,17 +9,18 @@ public class BoardManager : MonoBehaviour
     {
         public int resourceIndex;           // Determines what the gem looks like               
         public GameObject gemObject;
-        //public GemController gc;            // Reference to gem handler
-        public int dropDistance;            // Distance for gem to drop
         public bool isSelected;
     }
 
     private Gem[,] allGems;                 // Stores all gem objects on the board       
     private Gem draggedGem;                 // Reference to the dragged gem
     private Gem draggedGemClone = new Gem();// Reference to the clone of the gem dragged
-    private bool controllable = true;       // Lock of board to prevent user controls
+    private bool lock1 = false;
+    private bool lock2 = false;
+    private int lock3 = 0;
     private Vector2 mousePos = Vector2.zero;// Vector of the mouse position
     private bool dragging = false;          // Boolean object to show dragging status
+    private bool matchFound = false;        
 
     public int width;                       // Board width
     public int height;                      // Board height
@@ -63,13 +64,10 @@ public class BoardManager : MonoBehaviour
                 // Creating the object
                 GameObject gem = Instantiate(gemResources[index], pos, Quaternion.identity);
                 gem.transform.name = "(" + i + "," + j + ") : " + index;
-                gem.AddComponent<GemController>();
                 allGems[i, j] = new Gem
                 {
                     resourceIndex = index,
                     gemObject = gem,
-                    dropDistance = 0,
-                    //gc = gem.GetComponent<GemController>(),
                     isSelected = false
                 };
             }
@@ -79,9 +77,8 @@ public class BoardManager : MonoBehaviour
     void Update()
     {
         // If the board is processing, control will be denied
-        if (!controllable)
+        if (lock1 || lock2 || lock3 > 0)
         {
-            Debug.Log("Control denied");
             return;
         }
 
@@ -89,7 +86,6 @@ public class BoardManager : MonoBehaviour
         if (Input.GetMouseButtonDown(0))
         {
             mousePos = Camera.main.ScreenToWorldPoint(Input.mousePosition);
-            dragging = true;
             createClone(); // Create a gem clone
         } // When holding primary key (dragging)
         else if (Input.GetMouseButton(0) && dragging)
@@ -104,7 +100,6 @@ public class BoardManager : MonoBehaviour
             trackDragging();
             mousePos = Camera.main.ScreenToWorldPoint(Input.mousePosition);
             releaseGem();
-            //controllable = false; // No controls should be made when matching gems
             dragging = false;
         }
 
@@ -132,23 +127,21 @@ public class BoardManager : MonoBehaviour
         }
         else
         {
+            dragging = true;
             // Select the gem at the mouse position
             draggedGem = allGems[pos_x, pos_y];
 
             GameObject gemObjectClone = Instantiate(draggedGem.gemObject,
             new Vector2(pos_x, pos_y), Quaternion.identity);
-            gemObjectClone.AddComponent<GemController>();
             gemObjectClone.name = "(" + pos_x + "," + pos_y + ") : " + draggedGem.resourceIndex;
 
             draggedGemClone = new Gem
             {
                 resourceIndex = draggedGem.resourceIndex,
                 gemObject = gemObjectClone,
-                dropDistance = 0,
                 isSelected = false
             };
 
-            //draggedGem.gc.select();
             draggedGem.isSelected = true;
 
             // Change the transparency so user can see the gem underneath 
@@ -233,23 +226,25 @@ public class BoardManager : MonoBehaviour
         draggedGem = new Gem();
         draggedGem.isSelected = false;
 
-        bool matchFound = true;
+        matchFound = true;
 
         while (matchFound)
         {
             matchFound = false;
+
             // Check Match
             for (int i = 0; i < width; i++)
             {
                 for (int j = 0; j < height; j++)
                 {
-                    if (allGems[i, j].resourceIndex >= 0 && checkMatch(i, j))
-                        matchFound = true;
+                    if (allGems[i, j].resourceIndex >= 0)
+                    {
+                        StartCoroutine(checkMatch(i, j));
+                        StartCoroutine(dropGems());
+                    }
+                        
                 }
             }
-
-            dropGems();
-            debugCheck();
         }
 
         // Remove the reference to the clone
@@ -257,9 +252,17 @@ public class BoardManager : MonoBehaviour
     }
 
     // Check if there are at least 3 identical gems at (x,y)
-    private bool checkMatch(int x, int y)
+    private IEnumerator checkMatch(int x, int y)
     {
-        bool found = false;
+        while (lock1 || lock2 || lock3 > 0)
+            yield return new WaitForSeconds(0.1f);
+
+        debugCheck();
+
+        List<GameObject> toDestroy = new List<GameObject>();
+
+        lock1 = true;
+
         Gem target = allGems[x, y];
         int index = target.resourceIndex;
 
@@ -279,43 +282,42 @@ public class BoardManager : MonoBehaviour
 
         if (left + right >= 2 && left + right >= up + down)
         {
-            Debug.Log("-------------------");
-            found = true;
-            //Debug.Log("Match Start: " + new Vector2(x - left, y) + "\n" +
-            //"Match End: " + new Vector2(x + right, y));
+            matchFound = true;
 
             for (int i = x - left; i <= x + right; i ++)
             {
-                Debug.Log("Destroyed: " + allGems[i, y].gemObject.tag);
                 allGems[i,y].resourceIndex = -1;
-                Destroy(allGems[i,y].gemObject);
-                allGems[i, y].gemObject = null;
+                allGems[i,y].gemObject.GetComponent<SpriteRenderer>().color = Color.red;
+                toDestroy.Add(allGems[i, y].gemObject);
             }
-            Debug.Log("-------------------");
         }
         else if (up + down >= 2)
         {
-            Debug.Log("-------------------");
-            found = true;
-            //Debug.Log("Match Start: " + new Vector2(x, y-down) + "\n" +
-            //"Match End: " + new Vector2(x, y+up));
+            matchFound = true;
+
             for (int j = y - down; j <= y + up; j ++)
             {
-                Debug.Log("Destroyed: " + allGems[x,j].gemObject.tag);
                 allGems[x,j].resourceIndex = -1;
-                Destroy(allGems[x,j].gemObject);
-                allGems[x, j].gemObject = null;
+                allGems[x,j].gemObject.GetComponent<SpriteRenderer>().color = Color.red;
+                toDestroy.Add(allGems[x, j].gemObject);
             }
-            Debug.Log("-------------------");
         }
 
-        return found;
+        if (toDestroy.Count > 0) yield return new WaitForSeconds(0.5f);
+
+        foreach (GameObject obj in toDestroy) Destroy(obj);
+
+        lock1 = false;
     }
 
-
     // Drop all gems based on the drop distance recorded
-    private void dropGems()
+    private IEnumerator dropGems()
     {
+        while (lock1 || lock2 || lock3 > 0)
+            yield return new WaitForSeconds(0.1f);
+
+        lock1 = true;
+
         for (int i = 0; i < width; i ++)
         {
             Vector2 emptyPos = getLowestEmpty(i);
@@ -323,13 +325,15 @@ public class BoardManager : MonoBehaviour
             while (emptyPos.x >= 0)
             {
                 allGems[i, height] = generateGem(i, height);
-                dropByOne(i,Mathf.RoundToInt(emptyPos.y));
-                //allGems[i,height-1] = generateGem(i, height - 1);
+                StartCoroutine(dropByOne(i,Mathf.RoundToInt(emptyPos.y)));
+
+                while (lock2) yield return new WaitForSeconds(0.1f);
 
                 emptyPos = getLowestEmpty(i);
             }
-
         }
+
+        lock1 = false;
     }
 
     // Randomly generate and return a new gem
@@ -344,7 +348,6 @@ public class BoardManager : MonoBehaviour
         {
             resourceIndex = index,
             gemObject = gem,
-            dropDistance = 0,
             isSelected = false,
         };
     }
@@ -369,21 +372,20 @@ public class BoardManager : MonoBehaviour
     }
 
     // Drop all gems in the column by one 
-    private void dropByOne(int col, int row)
+    private IEnumerator dropByOne(int col, int row)
     {
+        lock2 = true;
         for (int i = row + 1; i < height + 1; i ++)
         {
             if (!isEmpty(allGems[col,i]))
             {
-                bool finished = false;
-                StartCoroutine(moveSlowly(allGems[col, i].gemObject, new Vector2(col, i - 1), finished));
+                StartCoroutine(dropSingleGemByOne(allGems[col, i].gemObject, col, i));
+                lock3++;
 
-                allGems[col, i].gemObject.transform.position = new Vector2(col, i - 1);
                 allGems[col, i - 1] = new Gem
                 {
                     resourceIndex = allGems[col,i].resourceIndex,
                     gemObject = allGems[col, i].gemObject,
-                    dropDistance = 0,
                     isSelected = false
                 };
                 allGems[col,i-1].gemObject.name = "(" + col + "," + (i-1) + 
@@ -393,28 +395,25 @@ public class BoardManager : MonoBehaviour
                 allGems[col, i].resourceIndex = -1;
             }
         }
+
+        while (lock3 > 0)
+            yield return new WaitForSeconds(0.1f);
+
+        lock2 = false;
     }
 
-    // Gradually drop the gem    Same function used in "GemsAndCombos"
-    private IEnumerator moveSlowly(GameObject obj, Vector2 dest, bool finished)
+    private IEnumerator dropSingleGemByOne(GameObject obj, int col, int i)
     {
-        WaitForSeconds delay = new WaitForSeconds(0.01f); //Delay between every drop frame
-
-        if (!obj.activeInHierarchy) yield return null;
-
-        Vector2 start = obj.transform.position;
-
+        WaitForSeconds delay = new WaitForSeconds(0.001f);
         float lerpPercent = 0;
-
-        // TODO: Missingreference Exception when the object is destroyed before 
-        //       the end of the coroutine (only affects dropping animation)
-        while (lerpPercent <= 1 && obj != null) 
+        while (lerpPercent <= 1 && obj != null)
         {
-            obj.transform.position = Vector2.Lerp(start, dest, lerpPercent);
+            obj.transform.position = Vector2.Lerp(new Vector2(col, i),
+                new Vector2(col, i - 1), lerpPercent);
             lerpPercent += 0.05f; //Distance of every drop frame
             yield return delay;
         }
-        finished = true;
+        lock3--;
     }
 
     private void debugCheck()
@@ -471,4 +470,15 @@ public class BoardManager : MonoBehaviour
                 return "empty";
         }
     }
+
+    /*
+    private IEnumerator test()
+    {
+        Debug.Log("Coroutine begins ");
+
+        yield return new WaitForSeconds(3);
+
+        Debug.Log("Coroutine ends");
+    }
+    */
 }
