@@ -23,18 +23,24 @@ public class BoardManager : MonoBehaviour
     private Vector2 mousePos = Vector2.zero;// Vector of the mouse position
     private bool dragging = false;          // True if any gem is selected
     private bool matchFound = false;        // True if match gems are found
-    private float health;                     // Current health of the enemy
+    private float health;
+    private float time;
 
     public int width;                       // Board width
     public int height;                      // Board height
     public List<GameObject> gemResources = new List<GameObject>();  // List of all gem prefabs
-    public HealthBar bar;                   // Health bar of the enemy
+    public HealthBar healthBar;             // Health bar of the enemy
+    public HealthBar Timer;                 // Bar of the timer
+    public float enemy_health;
+    public float time_limit;
 
     // Start is called before the first frame update 
     void Start()
     {
         SetUp();
-        health = 1f;
+        health = enemy_health;
+        time = time_limit;
+        StartCoroutine(StartTimer());
     }
 
     // Create the board
@@ -228,7 +234,7 @@ public class BoardManager : MonoBehaviour
     // Release the dragged gem to current position and start matching
     private IEnumerator ReleaseGem()
     {
-        StartCoroutine(ReduceHealth(0.1f));
+        StartCoroutine(ReduceHealth(1));
 
         // Remove the reference to the dragged gem and destroy the object
         Destroy(draggedGem.gemObject);
@@ -480,28 +486,46 @@ public class BoardManager : MonoBehaviour
         if (amount <= 0) yield break;
         if (health <= 0) yield break;
 
-        Debug.Log(health);
+        WaitForSeconds delay = new WaitForSeconds(0.001f);
 
         float end = health - amount;
 
-        if (end < 0) end = 0;
-
-        WaitForSeconds delay = new WaitForSeconds(0.001f);
-
-        while (health > end)
+        while (health > end && health >= 0)
         {
+            //Debug.Log(health - amount / 10);
             if (health - amount / 10 <= 0)
             {
-                bar.SetSize(0f);
+                healthBar.SetSizeX(0f);
                 health = 0f;
             }
             else
             {
-                bar.SetSize(health - amount / 10);
+                healthBar.SetSizeX((health - amount / 10) / enemy_health);
                 health = health - amount / 10;
             }
 
             yield return delay;
+        }
+    }
+
+    private IEnumerator StartTimer()
+    {
+        float delay = .1f;
+
+        while (time > 0)
+        {
+            if (time - delay <= 0)
+            {
+                Timer.SetSizeY(0f);
+                time = 0f;
+            }
+            else
+            {
+                Timer.SetSizeY((time - delay) / time_limit);
+                time = time - delay;
+            }
+
+            yield return new WaitForSeconds(delay);
         }
     }
 }
