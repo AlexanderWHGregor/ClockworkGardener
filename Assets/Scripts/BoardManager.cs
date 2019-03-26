@@ -23,15 +23,18 @@ public class BoardManager : MonoBehaviour
     private Vector2 mousePos = Vector2.zero;// Vector of the mouse position
     private bool dragging = false;          // True if any gem is selected
     private bool matchFound = false;        // True if match gems are found
+    private float health;                     // Current health of the enemy
 
     public int width;                       // Board width
     public int height;                      // Board height
     public List<GameObject> gemResources = new List<GameObject>();  // List of all gem prefabs
+    public HealthBar bar;                   // Health bar of the enemy
 
     // Start is called before the first frame update 
     void Start()
     {
         SetUp();
+        health = 1f;
     }
 
     // Create the board
@@ -84,20 +87,20 @@ public class BoardManager : MonoBehaviour
         if (Input.GetMouseButtonDown(0))
         {
             mousePos = Camera.main.ScreenToWorldPoint(Input.mousePosition);
-            createClone(); // Create a gem clone
+            CreateClone(); // Create a gem clone
         } // When holding primary key (dragging)
         else if (Input.GetMouseButton(0) && dragging)
         {
             mousePos = Camera.main.ScreenToWorldPoint(Input.mousePosition);
-            trackDragging();
+            TrackDragging();
         }
 
         // When ending with primary key (end of dragging)
         if (Input.GetMouseButtonUp(0) && dragging)
         {
-            trackDragging();
+            TrackDragging();
             mousePos = Camera.main.ScreenToWorldPoint(Input.mousePosition);
-            StartCoroutine(releaseGem());
+            StartCoroutine(ReleaseGem());
             dragging = false;
         }
 
@@ -111,7 +114,7 @@ public class BoardManager : MonoBehaviour
     }
 
     // Create a gem clone when dragging the gem
-    void createClone()
+    void CreateClone()
     {
         // Get mouse position
         int pos_x = Mathf.RoundToInt(mousePos.x);
@@ -159,7 +162,7 @@ public class BoardManager : MonoBehaviour
     }
 
     // Move the dragged gem toward the direction of the mouse 
-    private void trackDragging()
+    private void TrackDragging()
     {
         // Get the position of cloned gem
         int draggedX = Mathf.RoundToInt(draggedGemClone.gemObject.transform.position.x);
@@ -183,11 +186,11 @@ public class BoardManager : MonoBehaviour
             targetY--;
 
         // Get the target gem to swap with dragged gem
-        swapGems(draggedX,draggedY,targetX,targetY);
+        SwapGems(draggedX,draggedY,targetX,targetY);
     }
 
     // Swap two gems
-    private void swapGems(int x1, int y1, int x2, int y2)
+    private void SwapGems(int x1, int y1, int x2, int y2)
     {
         // Choose not to do swap animation to prevent errors
         // caused by cloned gem not catching the speed of mouse
@@ -223,8 +226,10 @@ public class BoardManager : MonoBehaviour
     }
 
     // Release the dragged gem to current position and start matching
-    private IEnumerator releaseGem()
+    private IEnumerator ReleaseGem()
     {
+        StartCoroutine(ReduceHealth(0.1f));
+
         // Remove the reference to the dragged gem and destroy the object
         Destroy(draggedGem.gemObject);
         draggedGem = new Gem();
@@ -248,8 +253,8 @@ public class BoardManager : MonoBehaviour
                     // Index is -1 only if the gem is empty
                     if (allGems[i, j].resourceIndex >= 0)
                     {
-                        StartCoroutine(checkMatch(i, j));
-                        StartCoroutine(dropGems());
+                        StartCoroutine(CheckMatch(i, j));
+                        StartCoroutine(DropGems());
 
                         // Wait for processing before next match
                         while (lock1 || lock2 > 0 || lock3 > 0)
@@ -261,7 +266,7 @@ public class BoardManager : MonoBehaviour
     }
 
     // Check if there are at least 3 identical gems at (x,y)
-    private IEnumerator checkMatch(int x, int y)
+    private IEnumerator CheckMatch(int x, int y)
     {
         // Pause if other function is processing
         while (lock1 || lock2 > 0|| lock3 > 0)
@@ -327,7 +332,7 @@ public class BoardManager : MonoBehaviour
     }
 
     // Drop all gems and fill the board
-    private IEnumerator dropGems()
+    private IEnumerator DropGems()
     {
         // Pause if other function is processing
         while (lock1 || lock2 > 0 || lock3 > 0)
@@ -342,19 +347,19 @@ public class BoardManager : MonoBehaviour
         for (int i = 0; i < width; i ++)
         {
             // Lowest empty position of the column
-            Vector2 emptyPos = getLowestEmpty(i);
+            Vector2 emptyPos = GetLowestEmpty(i);
 
             // Drop 1 step one time, until no empty position left
             while (emptyPos.x >= 0)
             {
                 // Generate a new gem at the top of this column
-                allGems[i, height] = generateGem(i, height);
+                allGems[i, height] = GenerateGem(i, height);
 
                 // Drop one step for every gem in this column
-                StartCoroutine(dropByOne(i,Mathf.RoundToInt(emptyPos.y)));
+                StartCoroutine(DropByOne(i,Mathf.RoundToInt(emptyPos.y)));
 
                 // Update the lowest empty position
-                emptyPos = getLowestEmpty(i);
+                emptyPos = GetLowestEmpty(i);
             }
         }
 
@@ -366,7 +371,7 @@ public class BoardManager : MonoBehaviour
     }
 
     // Randomly generate and return a new gem
-    private Gem generateGem(int x, int y)
+    private Gem GenerateGem(int x, int y)
     {
         Vector2 pos = new Vector2(x, y);
 
@@ -385,7 +390,7 @@ public class BoardManager : MonoBehaviour
     }
 
     // Get the lowest empty position of the column
-    private Vector2 getLowestEmpty(int col)
+    private Vector2 GetLowestEmpty(int col)
     {
         // Return the first empty position found from the 
         // bottom of the column
@@ -409,7 +414,7 @@ public class BoardManager : MonoBehaviour
     }
 
     // Drop all gems in the column by one 
-    private IEnumerator dropByOne(int col, int row)
+    private IEnumerator DropByOne(int col, int row)
     {
         // Increment lock for dropByOne
         lock2 ++;
@@ -421,7 +426,7 @@ public class BoardManager : MonoBehaviour
             if (!isEmpty(allGems[col,i]))
             {
                 // Dropping animation starts
-                StartCoroutine(dropSingleGemByOne(allGems[col, i].gemObject, col, i));
+                StartCoroutine(DropSingleGemByOne(allGems[col, i].gemObject, col, i));
 
                 // Duplicate the gem to the new position and 
                 // destroy the original one
@@ -448,7 +453,7 @@ public class BoardManager : MonoBehaviour
     }
 
     // Drop single gem down by one slowly
-    private IEnumerator dropSingleGemByOne(GameObject obj, int col, int i)
+    private IEnumerator DropSingleGemByOne(GameObject obj, int col, int i)
     {
         // Increment dropping animation lock
         lock3++;
@@ -468,5 +473,35 @@ public class BoardManager : MonoBehaviour
 
         // Unlock dropping animation
         lock3--;
+    }
+
+    private IEnumerator ReduceHealth(float amount)
+    {
+        if (amount <= 0) yield break;
+        if (health <= 0) yield break;
+
+        Debug.Log(health);
+
+        float end = health - amount;
+
+        if (end < 0) end = 0;
+
+        WaitForSeconds delay = new WaitForSeconds(0.001f);
+
+        while (health > end)
+        {
+            if (health - amount / 10 <= 0)
+            {
+                bar.SetSize(0f);
+                health = 0f;
+            }
+            else
+            {
+                bar.SetSize(health - amount / 10);
+                health = health - amount / 10;
+            }
+
+            yield return delay;
+        }
     }
 }
