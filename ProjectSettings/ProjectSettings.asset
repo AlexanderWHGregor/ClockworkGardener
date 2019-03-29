@@ -586,10 +586,10 @@ PlayerSettings:
   facebookXfbml: 0
   facebookFrictionlessRequests: 1
   apiCompatibilityLevel: 6
-  cloudProjectId: 80877e4e-105e-4772-91d1-b6bed7e9d893
+  cloudProjectId: f2c50ea1-6c0f-4f4c-b474-4c13eaadb5f7
   framebufferDepthMemorylessMode: 0
   projectName: Match 3 Practice
-  organizationId: lesteryida
+  organizationId: williamrn462
   cloudEnabled: 0
   enableNativePlatformBackendsForNewInputSystem: 0
   disableOldInputManagerSupport: 0

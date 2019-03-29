@@ -9,6 +9,7 @@ TagManager:
   - heart
   - circle
   - diamond
+  - Enemy
   layers:
   - Default
   - TransparentFX

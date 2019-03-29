@@ -1,6 +1,7 @@
 ﻿using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.UI;
 
 public class BoardManager : MonoBehaviour
 {
@@ -13,7 +14,8 @@ public class BoardManager : MonoBehaviour
         public GameObject gemObject;        // Game object of the gem
         public bool isSelected;             // True if the gem is dragged 
     }
-
+    public Text healthUI;
+    public Text textUI;
     private Gem[,] allGems;                 // 2D array to store all gem objects on the board       
     private Gem draggedGem;                 // Reference to the dragged gem
     private Gem draggedGemClone = new Gem();// Reference to the clone of the gem dragged
@@ -31,8 +33,8 @@ public class BoardManager : MonoBehaviour
     public List<GameObject> gemResources = new List<GameObject>();  // List of all gem prefabs
     public HealthBar healthBar;             // Health bar of the enemy
     public HealthBar Timer;                 // Bar of the timer
-    public float enemy_health;
-    public float time_limit;
+    private float enemy_health = LoadPuzzle.getHealth();
+    private float time_limit = LoadPuzzle.getTimer();
 
     // Start is called before the first frame update 
     void Start()
@@ -41,6 +43,8 @@ public class BoardManager : MonoBehaviour
         health = enemy_health;
         time = time_limit;
         StartCoroutine(StartTimer());
+        healthUI.text = "Enemy Health: " + Mathf.RoundToInt(health);
+        textUI.text = "Time Left: " + Mathf.RoundToInt(time);
     }
 
     // Create the board
@@ -503,7 +507,7 @@ public class BoardManager : MonoBehaviour
                 healthBar.SetSizeX((health - amount / 10) / enemy_health);
                 health = health - amount / 10;
             }
-
+            healthUI.text = "Enemy Health: " + Mathf.RoundToInt(health);
             yield return delay;
         }
     }
@@ -524,7 +528,7 @@ public class BoardManager : MonoBehaviour
                 Timer.SetSizeY((time - delay) / time_limit);
                 time = time - delay;
             }
-
+            textUI.text = "Time Left: " + Mathf.RoundToInt(time);
             yield return new WaitForSeconds(delay);
         }
     }
