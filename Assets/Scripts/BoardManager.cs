@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
+using UnityEngine.SceneManagement;
 
 public class BoardManager : MonoBehaviour
 {
@@ -15,7 +16,7 @@ public class BoardManager : MonoBehaviour
         public bool isSelected;             // True if the gem is dragged 
     }
     public Text healthUI;
-    public Text textUI;
+    public Text timerUI;
     private Gem[,] allGems;                 // 2D array to store all gem objects on the board       
     private Gem draggedGem;                 // Reference to the dragged gem
     private Gem draggedGemClone = new Gem();// Reference to the clone of the gem dragged
@@ -27,7 +28,6 @@ public class BoardManager : MonoBehaviour
     private bool matchFound = false;        // True if match gems are found
     private float health;
     private float time;
-
     public int width;                       // Board width
     public int height;                      // Board height
     public List<GameObject> gemResources = new List<GameObject>();  // List of all gem prefabs
@@ -44,7 +44,7 @@ public class BoardManager : MonoBehaviour
         time = time_limit;
         StartCoroutine(StartTimer());
         healthUI.text = "Enemy Health: " + Mathf.RoundToInt(health);
-        textUI.text = "Time Left: " + Mathf.RoundToInt(time);
+        timerUI.text = "Time Left: " + Mathf.RoundToInt(time);
     }
 
     // Create the board
@@ -72,8 +72,63 @@ public class BoardManager : MonoBehaviour
                 if (j >= 2 && allGems[i, j - 2].resourceIndex == allGems[i, j - 1].resourceIndex)
                     possibleIndexes.Remove(allGems[i, j - 2].resourceIndex);
 
+                int randomnumber = Random.Range(0, 100);
+                int index;
+
+                if (randomnumber >= 0 && randomnumber <= 35)
+                {
+                    index = 3;
+                    if (!possibleIndexes.Contains(3))
+                    {
+                        index = possibleIndexes[Random.Range(0, possibleIndexes.Count)];
+                    }
+                }
+                else if (randomnumber > 35 && randomnumber <= 55)
+                {
+                    index = 4;
+                    if (!possibleIndexes.Contains(4))
+                    {
+                        index = possibleIndexes[Random.Range(0, possibleIndexes.Count)];
+                    }
+                }
+                else if (randomnumber > 55 && randomnumber <= 75)
+                {
+                    index = 0;
+                    if (!possibleIndexes.Contains(0))
+                    {
+                        index = possibleIndexes[Random.Range(0, possibleIndexes.Count)];
+                    }
+                }
+                else if (randomnumber > 75 && randomnumber <= 80)
+                {
+                    index = 1;
+                    if (!possibleIndexes.Contains(1))
+                    {
+                        index = possibleIndexes[Random.Range(0, possibleIndexes.Count)];
+                    }
+                }
+                else if (randomnumber > 80 && randomnumber <= 100)
+                {
+                    index = 2;
+                    if (!possibleIndexes.Contains(2))
+                    {
+                        index = possibleIndexes[Random.Range(0, possibleIndexes.Count)];
+                    }
+                }
+                else
+                {
+                    index = possibleIndexes[Random.Range(0, possibleIndexes.Count)];
+                }
+
+                // 1 35%
+                // 2 20%
+                // 4 20%
+                // 8 5%
+                // -2 20%
+
+
                 // Randomly pick one from the gem resource set
-                int index = possibleIndexes[Random.Range(0, possibleIndexes.Count)];
+                //int index = possibleIndexes[Random.Range(0, possibleIndexes.Count)];
 
                 // Creating the object
                 GameObject gem = Instantiate(gemResources[index], pos, Quaternion.identity);
@@ -87,7 +142,6 @@ public class BoardManager : MonoBehaviour
             }
         }
     }
-
     void Update()
     {
         // If the board is processing, control will be denied
@@ -238,7 +292,7 @@ public class BoardManager : MonoBehaviour
     // Release the dragged gem to current position and start matching
     private IEnumerator ReleaseGem()
     {
-        StartCoroutine(ReduceHealth(1));
+       
 
         // Remove the reference to the dragged gem and destroy the object
         Destroy(draggedGem.gemObject);
@@ -260,18 +314,18 @@ public class BoardManager : MonoBehaviour
             {
                 for (int j = 0; j < height; j++)
                 {
+                    // Wait for processing before next match
+                    while (lock1 || lock2 > 0 || lock3 > 0)
+                        yield return new WaitForSeconds(0.1f);
+
                     // Index is -1 only if the gem is empty
                     if (allGems[i, j].resourceIndex >= 0)
                     {
                         StartCoroutine(CheckMatch(i, j));
-                        StartCoroutine(DropGems());
-
-                        // Wait for processing before next match
-                        while (lock1 || lock2 > 0 || lock3 > 0)
-                            yield return new WaitForSeconds(0.1f);
                     }
                 }
             }
+            StartCoroutine(DropGems());
         }
     }
 
@@ -284,6 +338,8 @@ public class BoardManager : MonoBehaviour
 
         // List of the gems to be destroyed
         List<GameObject> toDestroy = new List<GameObject>();
+
+        int targetIndex = -1;
 
         // Match lock
         lock1 = true;
@@ -309,6 +365,7 @@ public class BoardManager : MonoBehaviour
         if (left + right >= 2 && left + right >= up + down)
         {
             matchFound = true;
+            targetIndex = target.resourceIndex;
 
             // Update the index of matched gems
             // Change the color of the gems to let the user see the matched gems
@@ -322,6 +379,7 @@ public class BoardManager : MonoBehaviour
         else if (up + down >= 2)
         {
             matchFound = true;
+            targetIndex = target.resourceIndex;
 
             for (int j = y - down; j <= y + up; j ++)
             {
@@ -332,7 +390,14 @@ public class BoardManager : MonoBehaviour
         }
 
         // Wait to make sure user have time to see the change of colors
-        if (toDestroy.Count > 0) yield return new WaitForSeconds(0.5f);
+        if (toDestroy.Count > 0)
+        {
+            yield return new WaitForSeconds(0.6f);
+
+            StartCoroutine(ReduceHealth(toDestroy.Count * GetScore(targetIndex)));
+
+            //Debug.Log("Score: " + GetScore(targetIndex) + " * " + toDestroy.Count);
+        }
 
         // Destroy the game objects of matched gems
         foreach (GameObject obj in toDestroy) Destroy(obj);
@@ -385,8 +450,36 @@ public class BoardManager : MonoBehaviour
     {
         Vector2 pos = new Vector2(x, y);
 
+        int randomnumber = Random.Range(0, 100);
+        int index;
+
+        if (randomnumber >= 0 && randomnumber <= 35)
+        {
+            index = 3;
+        }
+        else if (randomnumber > 35 && randomnumber <= 55)
+        {
+            index = 4;
+        }
+        else if (randomnumber > 55 && randomnumber <= 75)
+        {
+            index = 0;
+        }
+        else if (randomnumber > 75 && randomnumber <= 80)
+        {
+            index = 1;
+        }
+        else if (randomnumber > 80 && randomnumber <= 100)
+        {
+            index = 2;
+        }
+        else
+        {
+            index = Random.Range(0, gemResources.Count);
+        }
+
         // Randomly pick a index of prefabs
-        int index = Random.Range(0, gemResources.Count);
+        //int index = Random.Range(0, gemResources.Count);
 
         // Create the new gem
         GameObject gem = Instantiate(gemResources[index], pos, Quaternion.identity);
@@ -485,33 +578,49 @@ public class BoardManager : MonoBehaviour
         lock3--;
     }
 
+    // Make damage to the enemy health based on the score
+    // and number of the matched gems
     private IEnumerator ReduceHealth(float amount)
     {
-        if (amount <= 0) yield break;
         if (health <= 0) yield break;
 
         WaitForSeconds delay = new WaitForSeconds(0.001f);
 
         float end = health - amount;
 
-        while (health > end && health >= 0)
+        for (int i = 0; i < 10; i ++)
         {
             //Debug.Log(health - amount / 10);
-            if (health - amount / 10 <= 0)
+            if (health - amount * i / 10 <= 0)
             {
                 healthBar.SetSizeX(0f);
                 health = 0f;
             }
+            else if (health - amount * i / 10 > enemy_health)
+            {
+                healthBar.SetSizeX(1f);
+            }
             else
             {
-                healthBar.SetSizeX((health - amount / 10) / enemy_health);
-                health = health - amount / 10;
+                healthBar.SetSizeX((health - amount * i / 10) / enemy_health);
             }
-            healthUI.text = "Enemy Health: " + Mathf.RoundToInt(health);
+
             yield return delay;
         }
+
+        health = health - amount;
+
+        if (health <= 0)
+        {
+            health = 0;
+            SceneManager.LoadSceneAsync(LoadRPG.getScene());
+        }
+        if (health > enemy_health) health = enemy_health;
+
+        healthUI.text = "Enemy Health : " + Mathf.RoundToInt(health);
     }
 
+    // Start the timer, when time runs out, game over
     private IEnumerator StartTimer()
     {
         float delay = .1f;
@@ -528,8 +637,30 @@ public class BoardManager : MonoBehaviour
                 Timer.SetSizeY((time - delay) / time_limit);
                 time = time - delay;
             }
-            textUI.text = "Time Left: " + Mathf.RoundToInt(time);
+
+            timerUI.text = "Time Left : " + (int)time;
+
             yield return new WaitForSeconds(delay);
+        }
+    }
+
+    // Return the score for different gems based on the index
+    private int GetScore(int index)
+    {
+        switch (index)
+        {
+            case (0):
+                return 4;
+            case (1):
+                return 8;
+            case (2):
+                return -2;
+            case (3):
+                return 1;
+            case (4):
+                return 2;
+            default:
+                return 0;
         }
     }
 }

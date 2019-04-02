@@ -60,8 +60,12 @@
     <Compile Include="Assets\Scripts\DialogHolder.cs" />
     <Compile Include="Assets\Scripts\DialogueManager.cs" />
     <Compile Include="Assets\Scripts\HealthBar.cs" />
+    <Compile Include="Assets\Scripts\LevelSelectMenu.cs" />
     <Compile Include="Assets\Scripts\LoadPuzzle.cs" />
+    <Compile Include="Assets\Scripts\LoadRPG.cs" />
+    <Compile Include="Assets\Scripts\MainMenu.cs" />
     <Compile Include="Assets\Scripts\PlayerController.cs" />
+    <Compile Include="Assets\Scripts\PlayerPrefs.cs" />
     <Compile Include="Assets\Scripts\TestTrigger.cs" />
     <Compile Include="Assets\SuperTiled2Unity\Examples\Overhead\Sprites\MegaDad\OverheadMegaDadController.cs" />
     <Compile Include="Assets\SuperTiled2Unity\Scripts\CollisionObject.cs" />
@@ -97,6 +101,7 @@
     <Compile Include="Assets\SuperTiled2Unity\Scripts\TilemapData.cs" />
     <Compile Include="Assets\SuperTiled2Unity\Scripts\TileObjectAnimator.cs" />
     <None Include="Assets\SuperTiled2Unity\Examples\Overhead\Maps\Zoria Tileset\readme.txt" />
+    <None Include="Assets\TextMesh Pro\Resources\Shaders\TMP_SDF-Mobile.shader" />
     <Reference Include="Unity.TextMeshPro.Editor">
       <HintPath>C:/Users/lklkl/Documents/GitHub/ClockworkGardener/Library/ScriptAssemblies/Unity.TextMeshPro.Editor.dll</HintPath>
     </Reference>

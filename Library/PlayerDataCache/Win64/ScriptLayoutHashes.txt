@@ -3,6 +3,7 @@ PlayerPath?
 C:/Users/lklkl/Documents/GitHub/ClockworkGardener/Builds/Match 3 Practice.exe
 SceneListBegin?
 Assets/Scenes/Main.unity
+Assets/Scenes/Puzzle.unity
 SceneListEnd?
 984dcc0ba3707b7691fbdca8ff508d28 Unity.TextMeshPro.dll:TMPro.TMP_SelectionCaret
 1b7e1a277e5e94208da53ce309c9499a Assembly-CSharp.dll:SuperTiled2Unity.SuperLayer
@@ -123,15 +124,17 @@ e8f8d64736aeb6584fcb9d75e205e9c1 Assembly-CSharp.dll:.PlayerController
 94017dcc9f00fe671ea7dc427b4da011 Unity.TextMeshPro.dll:TMPro.TMP_SpriteAsset
 c2ab9a84f1678e33cf5ae0434e69450f Assembly-CSharp.dll:SuperTiled2Unity.SuperObject
 e9cf2499e6f4bd646587ea3d0e5ec807 Assembly-CSharp.dll:SuperTiled2Unity.SuperImageLayer
+71bb6a6b6c8f052f948db64c7dd3ca4f Assembly-CSharp.dll:.PlayerPrefs
 46978845e7207c0143361709136085d3 Assembly-CSharp.dll:SuperTiled2Unity.TileObjectAnimator
 b3ab2106268377ffe25dd18ac23dca28 Unity.TextMeshPro.dll:TMPro.TMP_Asset
 2cc87dc29a773708b67b0a5221754b9d Assembly-CSharp.dll:SuperTiled2Unity.SuperTile
 71bb6a6b6c8f052f948db64c7dd3ca4f Unity.Analytics.Editor.dll:UnityEditor.Analytics.AnalyticsEventTrackerEditor
-87aecc4319696e7948d955c9141697c3 Assembly-CSharp.dll:.BoardManager
+19574b5af0c3a9f6e7f335a42c24387f Assembly-CSharp.dll:.BoardManager
 71bb6a6b6c8f052f948db64c7dd3ca4f Unity.TextMeshPro.dll:TMPro.TMP_SpriteAnimator
 71bb6a6b6c8f052f948db64c7dd3ca4f Assembly-CSharp.dll:SuperTiled2Unity.OverheadSorter
 71bb6a6b6c8f052f948db64c7dd3ca4f Assembly-CSharp.dll:SuperTiled2Unity.SuperColliderComponent
 4fd8bf02e3089425d3502e26c44ba31a Unity.TextMeshPro.dll:TMPro.TextContainer
+bfe0e91f9f8598b4715c56c975eefb5f Assembly-CSharp.dll:.LoadPuzzle
 e6ae40841db498b6e673877ac45ad208 UnityEngine.Networking.dll:UnityEngine.Networking.NetworkAnimator
 71bb6a6b6c8f052f948db64c7dd3ca4f UnityEngine.Networking.dll:UnityEngine.Networking.NetworkBehaviour
 1dcb82730d983b77cec736c6ef19f814 UnityEngine.Networking.dll:UnityEngine.Networking.NetworkDiscovery
@@ -170,6 +173,7 @@ a4f0a4f62100f1a4fb5cbe0e00dde83f Unity.TextMeshPro.dll:TMPro.TextMeshProUGUI
 5fc094978ce3e3591a7500ed380d854a Unity.Analytics.DataPrivacy.dll:UnityEngine.Analytics.DataPrivacyButton
 71bb6a6b6c8f052f948db64c7dd3ca4f Assembly-CSharp.dll:SuperTiled2Unity.OverheadSorterDynamic
 d251bf88db6c95a6b1aa0b69298da9ef UnityEngine.SpatialTracking.dll:UnityEngine.SpatialTracking.TrackedPoseDriver
+71bb6a6b6c8f052f948db64c7dd3ca4f Assembly-CSharp.dll:.LoadRPG
 5fa4dd2457fda37f1a6b09a185d31cc0 Assembly-CSharp.dll:.CameraController
 0313238a3bcd1c5c48685cbe4af356a2 Assembly-CSharp.dll:MegaDad.OverheadMegaDadController
 d791aa6007fa3640be1164ea75bb087d Unity.TextMeshPro.dll:TMPro.TMP_StyleSheet
@@ -180,4 +184,3 @@ c6666661329916e218bee7f5e79e60f5 Unity.TextMeshPro.dll:TMPro.TextMeshPro
 98ec445b7fd50e50f0de1e41c2bbf826 Assembly-CSharp.dll:SuperTiled2Unity.SuperCustomProperties
 8649814970b42d345b89944b862453cc Unity.TextMeshPro.dll:TMPro.TMP_SubMesh
 a85f6d96a3813cb5f3bf08eedfc07569 Assembly-CSharp.dll:.DialogHolder
-bfe0e91f9f8598b4715c56c975eefb5f Assembly-CSharp.dll:.LoadPuzzle

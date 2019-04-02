@@ -7,14 +7,25 @@ public class LoadPuzzle : MonoBehaviour
 {
     static float rhealth;
     static float rtimer;
-    [SerializeField] private string loadLevel;
+    public string loadLevel;
+    private static string sceneName;
     // Start is called before the first frame update
     void OnTriggerEnter2D(Collider2D other)
     {
         if (other.gameObject.name == "Player")
         {
-            SceneManager.LoadScene(loadLevel);
+            setScene();
+            SceneManager.LoadSceneAsync(loadLevel);
         }
+    }
+    private void setScene()
+    {
+        Scene newlyLoadedScene = SceneManager.GetActiveScene();
+        sceneName = newlyLoadedScene.name;
+    }
+    public static string getScene()
+    {
+        return sceneName;
     }
     public static void setHealth(float health)
     {
