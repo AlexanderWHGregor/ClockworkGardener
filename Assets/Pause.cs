@@ -67,4 +67,32 @@ public class Pause : MonoBehaviour
 
     }
 
+    public void Back()
+    {
+        if (Time.timeScale == 1)
+        {
+            Time.timeScale = 0;
+            ShowPaused();
+        }
+        else if (Time.timeScale == 0)
+        {
+            Time.timeScale = 1;
+            HidePaused();
+        }
+    }
+
+    public void Menu()
+    {
+        if (Time.timeScale == 1)
+        {
+            Time.timeScale = 0;
+            ShowPaused();
+        }
+        else if (Time.timeScale == 0)
+        {
+            Time.timeScale = 1;
+            HidePaused();
+        }
+    }
+
 }
