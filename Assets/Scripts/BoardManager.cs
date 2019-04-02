@@ -175,6 +175,8 @@ public class BoardManager : MonoBehaviour
             if (Input.GetMouseButtonUp(0))
                 draggedGem.isSelected = false;
         }
+
+       
     }
 
     // Create a gem clone when dragging the gem
@@ -632,6 +634,7 @@ public class BoardManager : MonoBehaviour
                 Timer.SetSizeY(0f);
                 time = 0f;
             }
+
             else
             {
                 Timer.SetSizeY((time - delay) / time_limit);
@@ -642,6 +645,8 @@ public class BoardManager : MonoBehaviour
 
             yield return new WaitForSeconds(delay);
         }
+        // Game Over
+        SceneManager.LoadScene("GameOver");
     }
 
     // Return the score for different gems based on the index
